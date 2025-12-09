@@ -228,6 +228,20 @@ html_code = f"""
       const [newPerson, setNewPerson] = useState({{ name: '', dept: '', devir: 0 }});
       const [sortConfig, setSortConfig] = useState({{ key: null, direction: 'desc' }});
 
+      // --- VERİ YÜKLEME FONKSİYONU (YERELDEN) ---
+      const loadLocalData = () => {{
+          const localP = localStorage.getItem('sbbf_personnel');
+          const localSet = localStorage.getItem('sbbf_settings');
+          const localSch = localStorage.getItem('sbbf_schedule');
+          const localMan = localStorage.getItem('sbbf_manual');
+          
+          if(localP) setPersonnel(JSON.parse(localP));
+          if(localSet) setSettings(JSON.parse(localSet));
+          if(localSch) setSchedule(JSON.parse(localSch));
+          if(localMan) setManualScores(JSON.parse(localMan));
+          setIsLoading(false);
+      }};
+
       // --- FIREBASE BAĞLANTISI ---
       useEffect(() => {{
         if (window.FIREBASE_CONFIG && window.initializeApp) {{
@@ -258,31 +272,22 @@ html_code = f"""
                    console.error("Veri okuma hatası:", error);
                    // Hata olursa (örn: Permission Denied) offline moduna düş
                    setIsOnline(false);
-                   setIsLoading(false);
+                   loadLocalData(); // HATAYI DÜZELTEN SATIR: Hata olursa yerel veriyi yükle
                 }});
             }}).catch((error) => {{
                 console.error("Anonim giriş hatası:", error);
                 setIsOnline(false);
-                setIsLoading(false);
+                loadLocalData(); // HATAYI DÜZELTEN SATIR: Giriş yapılamazsa yerel veriyi yükle
             }});
 
           }} catch (e) {{
             console.error("Firebase Hatası:", e);
             setIsOnline(false);
-            setIsLoading(false);
+            loadLocalData(); // HATAYI DÜZELTEN SATIR
           }}
         }} else {{
-            // Yerel mod
-            const localP = localStorage.getItem('sbbf_personnel');
-            const localSet = localStorage.getItem('sbbf_settings');
-            const localSch = localStorage.getItem('sbbf_schedule');
-            const localMan = localStorage.getItem('sbbf_manual');
-            
-            if(localP) setPersonnel(JSON.parse(localP));
-            if(localSet) setSettings(JSON.parse(localSet));
-            if(localSch) setSchedule(JSON.parse(localSch));
-            if(localMan) setManualScores(JSON.parse(localMan));
-            setIsLoading(false);
+            // Firebase Config yoksa direkt yerelden yükle
+            loadLocalData();
         }}
       }}, []);
 
