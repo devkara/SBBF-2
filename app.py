@@ -539,7 +539,7 @@ html_code = f"""
             {{/* --- TAB: GÖREV ÇİZELGESİ --- */}}
             {{activeTab === 'schedule' && (
                 <div className="bg-white rounded-xl shadow border border-gray-200 flex flex-col h-full overflow-hidden">
-                    {/* --- KOD LEJANTI --- */}
+                    {{/* --- KOD LEJANTI --- */}}
                     <div className="p-2 bg-gray-50 border-b flex flex-wrap gap-2 text-[10px] sm:text-xs text-gray-600 justify-center shrink-0">
                          {{settings.map(s => (
                              <div key={{s.code}} className="flex items-center gap-1 bg-white border px-2 py-1 rounded-full shadow-sm">
