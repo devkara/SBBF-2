@@ -566,7 +566,7 @@ html_code = f"""
                                     <th className="p-2 border w-40 min-w-[150px] text-left text-xs font-bold bg-gray-100">Görev</th>
                                     {{deptSortedPersonnel.map(p => (
                                         <th key={{p.id}} className="p-1 border w-10 min-w-[36px] text-center bg-blue-50 relative align-bottom hover:bg-blue-100 transition-colors">
-                                            {/* DİKEY İSİM YAZISI */}
+                                            {{/* DİKEY İSİM YAZISI */}}
                                             <div className="vertical-text text-[10px] font-bold text-blue-900 mx-auto">
                                                 {{p.name}}
                                             </div>
