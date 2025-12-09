@@ -13,7 +13,6 @@ st.set_page_config(
 # --- GELİŞMİŞ CSS: TAM EKRAN VE SIFIR BOŞLUK ---
 st.markdown("""
 <style>
-    /* Streamlit'in ana kapsayıcısındaki boşlukları kaldır */
     .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
@@ -22,46 +21,52 @@ st.markdown("""
         margin-top: 0rem !important;
         max-width: 100vw !important;
     }
-    /* Üstteki header çizgisini ve menüyü biraz şeffaflaştır veya gizle */
-    header[data-testid="stHeader"] {
-        display: none;
-    }
-    /* Iframe'i tam ekran yap */
+    header[data-testid="stHeader"] { display: none; }
     iframe {
         width: 100vw !important;
         height: 100vh !important;
         border: none !important;
         display: block;
     }
-    /* Sayfa arka planı */
-    .stApp {
-        background-color: #f3f4f6;
-    }
+    .stApp { background-color: #f3f4f6; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- KENAR ÇUBUĞU: VERİTABANI BAĞLANTISI ---
-with st.sidebar:
-    st.header("☁️ Veritabanı Ayarları")
-    st.info("Çok kullanıcılı (ortak) kullanım için Firebase Config bilginizi buraya yapıştırın.")
-    
-    firebase_config_input = st.text_area(
-        "Firebase Config (JSON)",
-        placeholder='{"apiKey": "...", ...}',
-        height=300
-    )
+# --- FIREBASE CONFIG YÖNETİMİ ---
+# Sistem önce Streamlit Secrets'a bakar, yoksa Sidebar'dan giriş ister.
+firebase_config_json = "null"
 
-    firebase_config_json = "null"
-    if firebase_config_input.strip():
-        try:
-            clean_input = firebase_config_input.replace("const firebaseConfig =", "").replace(";", "").strip()
-            json.loads(clean_input)
-            firebase_config_json = clean_input
-            st.success("Bağlantı formatı geçerli! ✅")
-        except:
-            st.warning("Lütfen geçerli bir JSON formatı giriniz.")
+if "firebase" in st.secrets:
+    # Secrets'tan gelen veriyi JSON string'e çevir
+    try:
+        firebase_config_json = json.dumps(dict(st.secrets["firebase"]))
+    except Exception as e:
+        st.error(f"Secrets hatası: {e}")
+else:
+    # Secrets yoksa manuel giriş kutusunu göster
+    with st.sidebar:
+        st.header("☁️ Veritabanı Ayarları")
+        st.warning("API anahtarı bulunamadı. Verileriniz sadece bu tarayıcıda saklanır.")
+        st.info("Kalıcı ve ortak kullanım için 'Streamlit Secrets' ayarlarını yapın veya aşağıya JSON yapıştırın.")
+        
+        firebase_config_input = st.text_area(
+            "Firebase Config (JSON)",
+            placeholder='{"apiKey": "...", ...}',
+            height=300
+        )
+
+        if firebase_config_input.strip():
+            try:
+                clean_input = firebase_config_input.replace("const firebaseConfig =", "").replace(";", "").strip()
+                # Validasyon
+                json.loads(clean_input)
+                firebase_config_json = clean_input
+                st.success("Geçici bağlantı sağlandı! ✅")
+            except:
+                st.error("Geçersiz JSON formatı.")
 
 # --- REACT UYGULAMASI ---
+# Not: Python f-string içinde React süslü parantezleri {{ }} şeklinde çiftlenmelidir.
 html_code = f"""
 <!DOCTYPE html>
 <html lang="tr">
@@ -79,6 +84,7 @@ html_code = f"""
     import {{ initializeApp }} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import {{ getFirestore, doc, onSnapshot, setDoc, getDoc }} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     
+    // Python'dan gelen config verisi
     window.FIREBASE_CONFIG = {firebase_config_json};
     window.initializeApp = initializeApp;
     window.getFirestore = getFirestore;
@@ -92,14 +98,12 @@ html_code = f"""
     body {{ background-color: #f3f4f6; overflow: hidden; margin: 0; padding: 0; }}
     #root {{ height: 100vh; display: flex; flex-direction: column; }}
     
-    /* Tablo Kaydırma */
     .table-container {{
         overflow: auto;
         flex: 1;
         -webkit-overflow-scrolling: touch;
     }}
     
-    /* Dikey Yazı (İsimler İçin) */
     .vertical-text {{
         writing-mode: vertical-rl;
         transform: rotate(180deg);
@@ -107,12 +111,11 @@ html_code = f"""
         text-align: left;
         padding-top: 10px;
         padding-bottom: 10px;
-        height: 140px; /* İsim alanı yüksekliği */
+        height: 140px;
         display: flex;
         align-items: center;
     }}
 
-    /* Input stilleri */
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     input[type=number] {{ -moz-appearance: textfield; }}
   </style>
