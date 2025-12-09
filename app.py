@@ -10,23 +10,32 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS İLE TAM EKRAN VE MOBİL UYUM ---
+# --- GELİŞMİŞ CSS: TAM EKRAN VE SIFIR BOŞLUK ---
 st.markdown("""
 <style>
-    /* Kenar boşluklarını kaldırıp tam ekran yapma */
+    /* Streamlit'in ana kapsayıcısındaki boşlukları kaldır */
     .block-container {
-        padding-top: 1rem;
-        padding-bottom: 0rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        max-width: 100%;
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
+        margin-top: 0rem !important;
+        max-width: 100vw !important;
     }
-    /* Streamlit'in varsayılan footer'ını gizle */
-    footer {visibility: hidden;}
-    /* Iframe'in mobilde tam oturması için */
+    /* Üstteki header çizgisini ve menüyü biraz şeffaflaştır veya gizle */
+    header[data-testid="stHeader"] {
+        display: none;
+    }
+    /* Iframe'i tam ekran yap */
     iframe {
-        width: 100% !important;
+        width: 100vw !important;
         height: 100vh !important;
+        border: none !important;
+        display: block;
+    }
+    /* Sayfa arka planı */
+    .stApp {
+        background-color: #f3f4f6;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -34,26 +43,19 @@ st.markdown("""
 # --- KENAR ÇUBUĞU: VERİTABANI BAĞLANTISI ---
 with st.sidebar:
     st.header("☁️ Veritabanı Ayarları")
-    st.info("""
-    Çok kullanıcılı (ortak) kullanım için Firebase Config bilginizi buraya yapıştırın.
-    Eğer boş bırakırsanız sistem **Yerel Modda (Sadece bu cihazda)** çalışır.
-    """)
+    st.info("Çok kullanıcılı (ortak) kullanım için Firebase Config bilginizi buraya yapıştırın.")
     
-    # Kullanıcıdan Firebase Config JSON verisini alma
     firebase_config_input = st.text_area(
         "Firebase Config (JSON)",
-        placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "..."}',
+        placeholder='{"apiKey": "...", ...}',
         height=300
     )
 
-    # Config verisini JSON formatına çevirme denemesi
     firebase_config_json = "null"
     if firebase_config_input.strip():
         try:
-            # Kullanıcı JS objesi gibi yapıştırırsa diye temizlik (basitçe)
             clean_input = firebase_config_input.replace("const firebaseConfig =", "").replace(";", "").strip()
-            # Eğer valid JSON ise string olarak React'e göndereceğiz
-            json.loads(clean_input) # Test et
+            json.loads(clean_input)
             firebase_config_json = clean_input
             st.success("Bağlantı formatı geçerli! ✅")
         except:
@@ -77,7 +79,6 @@ html_code = f"""
     import {{ initializeApp }} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import {{ getFirestore, doc, onSnapshot, setDoc, getDoc }} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     
-    // Python'dan gelen config verisi
     window.FIREBASE_CONFIG = {firebase_config_json};
     window.initializeApp = initializeApp;
     window.getFirestore = getFirestore;
@@ -88,22 +89,32 @@ html_code = f"""
   </script>
 
   <style>
-    body {{ background-color: #f3f4f6; overflow-x: hidden; }}
-    /* Mobilde tablo kaydırma deneyimi için */
+    body {{ background-color: #f3f4f6; overflow: hidden; margin: 0; padding: 0; }}
+    #root {{ height: 100vh; display: flex; flex-direction: column; }}
+    
+    /* Tablo Kaydırma */
     .table-container {{
-        overflow-x: auto;
+        overflow: auto;
+        flex: 1;
         -webkit-overflow-scrolling: touch;
     }}
-    /* Inputların ok işaretlerini gizleme (Chrome, Safari, Edge, Opera) */
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {{
-      -webkit-appearance: none;
-      margin: 0;
+    
+    /* Dikey Yazı (İsimler İçin) */
+    .vertical-text {{
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        white-space: nowrap;
+        text-align: left;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        height: 140px; /* İsim alanı yüksekliği */
+        display: flex;
+        align-items: center;
     }}
-    /* Inputların ok işaretlerini gizleme (Firefox) */
-    input[type=number] {{
-      -moz-appearance: textfield;
-    }}
+
+    /* Input stilleri */
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
+    input[type=number] {{ -moz-appearance: textfield; }}
   </style>
 </head>
 <body>
@@ -112,7 +123,7 @@ html_code = f"""
   <script type="text/babel">
     const {{ useState, useEffect, useMemo, useRef }} = React;
 
-    // --- ICONS ---
+    // --- ICONS (Lucide) ---
     const Icon = ({{ path, className, size = 16 }}) => (
       <svg xmlns="http://www.w3.org/2000/svg" width={{size}} height={{size}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={{className}}>
         {{path}}
@@ -136,10 +147,9 @@ html_code = f"""
         ArrowUp: (p) => <Icon {{...p}} path={{<><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>}} />,
         ArrowUpDown: (p) => <Icon {{...p}} path={{<><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></>}} />,
         Info: (p) => <Icon {{...p}} path={{<><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></>}} />,
-        RefreshCw: (p) => <Icon {{...p}} path={{<><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></>}} />,
     }};
 
-    // --- INITIAL DATA ---
+    // --- BAŞLANGIÇ VERİLERİ ---
     const INITIAL_SETTINGS = [
       {{ code: 'G', label: 'Gözetmenlik', points: 1 }},
       {{ code: 'T', label: 'Tanıtım', points: 2 }},
@@ -150,7 +160,6 @@ html_code = f"""
       {{ code: 'X', label: 'Diğer', points: 1 }},
     ];
     
-    // Yüklenen dosyadan alınan veriler
     const INITIAL_PERSONNEL = [
       {{ id: 1, name: 'İhsan ÖZKOL', dept: 'Bilgi ve Belge Yönetimi', devir: 5 }},
       {{ id: 2, name: 'Talih ÖZTÜRK', dept: 'Bilgi ve Belge Yönetimi', devir: 5 }},
@@ -190,7 +199,7 @@ html_code = f"""
       const [manualScores, setManualScores] = useState({{}});
       
       const [showAddPersonModal, setShowAddPersonModal] = useState(false);
-      const [editingPerson, setEditingPerson] = useState(null); // Düzenlenen kişi için state
+      const [editingPerson, setEditingPerson] = useState(null);
       const [newPerson, setNewPerson] = useState({{ name: '', dept: '', devir: 0 }});
       const [sortConfig, setSortConfig] = useState({{ key: null, direction: 'desc' }});
 
@@ -297,7 +306,11 @@ html_code = f"""
       }}, [schedule, personnel, settings, manualScores]);
 
       // --- SIRALAMA ---
-      const sortedPersonnel = useMemo(() => {{
+      const deptSortedPersonnel = useMemo(() => {{
+          return [...personnel].sort((a,b) => a.dept.localeCompare(b.dept, 'tr') || a.name.localeCompare(b.name, 'tr'));
+      }}, [personnel]);
+
+      const sortedPersonnelList = useMemo(() => {{
          let items = [...personnel];
          if (sortConfig.key === 'total') {{
              items.sort((a, b) => {{
@@ -309,11 +322,8 @@ html_code = f"""
          return items;
       }}, [personnel, stats, sortConfig]);
 
-      const deptSortedPersonnel = useMemo(() => {{
-          return [...personnel].sort((a,b) => a.dept.localeCompare(b.dept, 'tr') || a.name.localeCompare(b.name, 'tr'));
-      }}, [personnel]);
 
-      // --- HANDLERS ---
+      // --- AKSİYONLAR ---
       const handleManualChange = (personId, code, value) => {{
           const val = parseInt(value) || 0;
           const newManual = {{ ...manualScores }};
@@ -351,7 +361,6 @@ html_code = f"""
           setNewPerson({{name:'', dept:'', devir:0}});
       }};
 
-      // Personel Güncelleme Fonksiyonu
       const handleUpdatePerson = () => {{
           if (!editingPerson || !editingPerson.name) return;
           const newPersonnel = personnel.map(p => p.id === editingPerson.id ? editingPerson : p);
@@ -369,7 +378,7 @@ html_code = f"""
           let csv = "\\uFEFF";
           if(type === 'list') {{
               csv += "Sıra,Adı,Bölüm,Devir," + settings.map(s => s.label).join(",") + ",TOPLAM\\n";
-              sortedPersonnel.forEach((p, i) => {{
+              sortedPersonnelList.forEach((p, i) => {{
                   const st = stats[p.id];
                   const counts = settings.map(s => st.fromSchedule[s.code] + st.fromManual[s.code]).join(",");
                   csv += `${{i+1}},"${{p.name}}","${{p.dept}}",${{p.devir}},${{counts}},${{st.total}}\\n`;
@@ -387,101 +396,85 @@ html_code = f"""
       }};
 
       return (
-        <div className="min-h-screen flex flex-col font-sans text-sm text-gray-800">
+        <div className="flex flex-col h-screen overflow-hidden font-sans text-sm text-gray-800 bg-gray-50">
           
-          {{/* MODAL: YENİ EKLE */}}
-          {{showAddPersonModal && (
+          {{/* --- MODALLER --- */}}
+          {{(showAddPersonModal || editingPerson) && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-[fadeIn_0.2s_ease-out]">
                     <div className="bg-blue-900 text-white p-4 flex justify-between items-center">
-                        <h3 className="font-bold">Yeni Personel</h3>
-                        <button onClick={{()=>setShowAddPersonModal(false)}}><Icons.X/></button>
+                        <h3 className="font-bold">{{editingPerson ? 'Düzenle' : 'Yeni Personel'}}</h3>
+                        <button onClick={{()=>{{setShowAddPersonModal(false); setEditingPerson(null);}}}}><Icons.X/></button>
                     </div>
                     <div className="p-6 space-y-3">
-                        <input className="w-full border p-2 rounded" placeholder="Ad Soyad" value={{newPerson.name}} onChange={{e=>setNewPerson({{...newPerson, name:e.target.value}})}} />
-                        <input className="w-full border p-2 rounded" placeholder="Bölüm" value={{newPerson.dept}} onChange={{e=>setNewPerson({{...newPerson, dept:e.target.value}})}} />
-                        <input className="w-full border p-2 rounded" type="number" placeholder="Devir Puanı" value={{newPerson.devir}} onChange={{e=>setNewPerson({{...newPerson, devir:Number(e.target.value)}})}} />
-                        <button onClick={{addPerson}} className="w-full bg-blue-600 text-white p-2 rounded font-bold hover:bg-blue-700">Kaydet</button>
+                        {{editingPerson ? (
+                            <>
+                                <input className="w-full border p-2 rounded" value={{editingPerson.name}} onChange={{e=>setEditingPerson({{...editingPerson, name:e.target.value}})}} />
+                                <input className="w-full border p-2 rounded" value={{editingPerson.dept}} onChange={{e=>setEditingPerson({{...editingPerson, dept:e.target.value}})}} />
+                                <input className="w-full border p-2 rounded" type="number" value={{editingPerson.devir}} onChange={{e=>setEditingPerson({{...editingPerson, devir:Number(e.target.value)}})}} />
+                                <button onClick={{handleUpdatePerson}} className="w-full bg-blue-600 text-white p-2 rounded font-bold hover:bg-blue-700">Güncelle</button>
+                            </>
+                        ) : (
+                            <>
+                                <input className="w-full border p-2 rounded" placeholder="Ad Soyad" value={{newPerson.name}} onChange={{e=>setNewPerson({{...newPerson, name:e.target.value}})}} />
+                                <input className="w-full border p-2 rounded" placeholder="Bölüm" value={{newPerson.dept}} onChange={{e=>setNewPerson({{...newPerson, dept:e.target.value}})}} />
+                                <input className="w-full border p-2 rounded" type="number" placeholder="Devir Puanı" value={{newPerson.devir}} onChange={{e=>setNewPerson({{...newPerson, devir:Number(e.target.value)}})}} />
+                                <button onClick={{addPerson}} className="w-full bg-blue-600 text-white p-2 rounded font-bold hover:bg-blue-700">Kaydet</button>
+                            </>
+                        )}}
                     </div>
                 </div>
             </div>
           )}}
 
-          {{/* MODAL: DÜZENLE */}}
-          {{editingPerson && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-[fadeIn_0.2s_ease-out]">
-                    <div className="bg-blue-900 text-white p-4 flex justify-between items-center">
-                        <h3 className="font-bold">Personel Düzenle</h3>
-                        <button onClick={{()=>setEditingPerson(null)}}><Icons.X/></button>
-                    </div>
-                    <div className="p-6 space-y-3">
-                        <div>
-                            <label className="text-xs font-bold text-gray-500">Ad Soyad</label>
-                            <input className="w-full border p-2 rounded" value={{editingPerson.name}} onChange={{e=>setEditingPerson({{...editingPerson, name:e.target.value}})}} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500">Bölüm</label>
-                            <input className="w-full border p-2 rounded" value={{editingPerson.dept}} onChange={{e=>setEditingPerson({{...editingPerson, dept:e.target.value}})}} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500">Devir Puanı</label>
-                            <input className="w-full border p-2 rounded" type="number" value={{editingPerson.devir}} onChange={{e=>setEditingPerson({{...editingPerson, devir:Number(e.target.value)}})}} />
-                        </div>
-                        <button onClick={{handleUpdatePerson}} className="w-full bg-blue-600 text-white p-2 rounded font-bold hover:bg-blue-700">Güncelle</button>
-                    </div>
-                </div>
-            </div>
-          )}}
-
-          {{/* HEADER */}}
-          <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-3 shadow-lg sticky top-0 z-40">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-3 max-w-7xl mx-auto">
+          {{/* --- HEADER --- */}}
+          <header className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-3 shadow-lg z-40 shrink-0">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-3 max-w-[100vw] mx-auto px-2">
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="bg-white/10 p-2 rounded-lg"><Icons.Calendar size={{20}}/></div>
                     <div>
                         <h1 className="text-lg font-bold leading-tight">SBBF Görev Takip</h1>
                         <div className="flex items-center gap-2 text-xs text-blue-200">
-                            {{isOnline ? <span className="flex items-center gap-1 text-green-300 font-bold"><Icons.Cloud size={{12}}/> Çevrimiçi (Ortak Veri)</span> : <span className="flex items-center gap-1 text-orange-300"><Icons.CloudOff size={{12}}/> Çevrimdışı (Yerel)</span>}}
+                            {{isOnline ? <span className="flex items-center gap-1 text-green-300 font-bold"><Icons.Cloud size={{12}}/> Çevrimiçi</span> : <span className="flex items-center gap-1 text-orange-300"><Icons.CloudOff size={{12}}/> Yerel Mod</span>}}
                         </div>
                     </div>
                 </div>
                 
                 <div className="flex bg-blue-950/50 p-1 rounded-lg w-full md:w-auto overflow-x-auto">
                     <button onClick={{()=>setActiveTab('list')}} className={{`flex-1 md:flex-none px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap ${{activeTab==='list'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
-                        <Icons.Users size={{16}}/> <span className="hidden sm:inline">Personel Listesi</span><span className="sm:hidden">Liste</span>
+                        <Icons.Users size={{16}}/> Personel
                     </button>
                     <button onClick={{()=>setActiveTab('schedule')}} className={{`flex-1 md:flex-none px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap ${{activeTab==='schedule'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
-                        <Icons.Calendar size={{16}}/> <span className="hidden sm:inline">Görev Çizelgesi</span><span className="sm:hidden">Çizelge</span>
+                        <Icons.Calendar size={{16}}/> Çizelge
                     </button>
                     <button onClick={{()=>setActiveTab('settings')}} className={{`flex-1 md:flex-none px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap ${{activeTab==='settings'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
-                        <Icons.Settings size={{16}}/> <span className="hidden sm:inline">Ayarlar</span><span className="sm:hidden">Ayar</span>
+                        <Icons.Settings size={{16}}/> Ayarlar
                     </button>
                 </div>
             </div>
           </header>
 
-          <main className="flex-1 p-2 md:p-4 max-w-[100vw] overflow-hidden">
+          <main className="flex-1 overflow-hidden p-2 relative bg-gray-100 flex flex-col">
             
             {{/* --- TAB: PERSONEL LİSTESİ --- */}}
             {{activeTab === 'list' && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 flex flex-col h-[85vh]">
-                    <div className="p-3 border-b flex flex-wrap justify-between items-center gap-2 bg-gray-50 rounded-t-xl">
+                <div className="bg-white rounded-xl shadow border border-gray-200 flex flex-col h-full overflow-hidden">
+                    <div className="p-2 border-b flex justify-between items-center bg-gray-50 rounded-t-xl shrink-0">
                         <div className="flex gap-2">
                              <button onClick={{()=>setShowAddPersonModal(true)}} className="bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 text-xs font-bold flex items-center gap-1"><Icons.UserPlus size={{14}}/> Ekle</button>
                              <button onClick={{()=>exportCSV('list')}} className="bg-gray-600 text-white px-3 py-1.5 rounded hover:bg-gray-700 text-xs font-bold flex items-center gap-1"><Icons.Download size={{14}}/> Excel</button>
                         </div>
-                        <div className="text-xs text-gray-500 italic"><Icons.Info size={{12}} className="inline mr-1"/>Hücrelere sayı yazarak manuel ekleme yapabilirsiniz.</div>
+                        <div className="text-xs text-gray-500 italic hidden sm:block">Tabloda direkt düzenleme yapılabilir.</div>
                     </div>
                     
-                    <div className="flex-1 overflow-auto table-container">
+                    <div className="table-container bg-white">
                         <table className="w-full border-collapse min-w-[800px]">
                             <thead className="bg-gray-800 text-white sticky top-0 z-10 text-xs uppercase tracking-wider">
                                 <tr>
                                     <th className="p-3 text-left w-10">#</th>
                                     <th className="p-3 text-left w-48">Personel</th>
                                     {{settings.map(s => (
-                                        <th key={{s.code}} className="p-2 text-center w-20 min-w-[80px]">
+                                        <th key={{s.code}} className="p-2 text-center w-20 min-w-[80px] bg-gray-700/50 border-l border-gray-600">
                                             <div className="flex flex-col items-center">
                                                 <span>{{s.label}}</span>
                                                 <span className="text-[9px] opacity-60">({{s.points}}p)</span>
@@ -489,18 +482,18 @@ html_code = f"""
                                         </th>
                                     ))}}
                                     <th className="p-3 text-center w-20 bg-gray-700">Devir</th>
-                                    <th onClick={{()=>setSortConfig({{key:'total', direction: sortConfig.direction==='asc'?'desc':'asc'}})}} className="p-3 text-center w-24 bg-blue-900 cursor-pointer hover:bg-blue-700">
+                                    <th onClick={{()=>setSortConfig({{key:'total', direction: sortConfig.direction==='asc'?'desc':'asc'}})}} className="p-3 text-center w-24 bg-blue-900 cursor-pointer hover:bg-blue-700 sticky right-0 z-20 shadow-lg">
                                         TOPLAM
                                     </th>
                                     <th className="w-20 text-center">İşlem</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-700 divide-y divide-gray-100">
-                                {{sortedPersonnel.map((p, idx) => {{
+                                {{sortedPersonnelList.map((p, idx) => {{
                                     const st = stats[p.id];
                                     return (
-                                        <tr key={{p.id}} className="hover:bg-blue-50/50 transition-colors group">
-                                            <td className="p-3 text-center text-gray-400 font-mono text-xs">{{idx + 1}}</td>
+                                        <tr key={{p.id}} className="hover:bg-blue-50/50 transition-colors group text-xs sm:text-sm">
+                                            <td className="p-3 text-center text-gray-400 font-mono">{{idx + 1}}</td>
                                             <td className="p-3">
                                                 <div className="font-bold text-gray-800">{{p.name}}</div>
                                                 <div className="text-[10px] text-gray-500">{{p.dept}}</div>
@@ -520,19 +513,19 @@ html_code = f"""
                                                                 placeholder="0"
                                                             />
                                                             <div className="text-[9px] text-gray-400 pointer-events-none absolute bottom-1">
-                                                                {{schedCount > 0 && <span>Otomatik: {{schedCount}}</span>}}
+                                                                {{schedCount > 0 && <span>Auto: {{schedCount}}</span>}}
                                                             </div>
                                                         </div>
                                                     </td>
                                                 );
                                             }})}}
                                             <td className="p-3 text-center font-mono bg-gray-50">{{p.devir}}</td>
-                                            <td className="p-3 text-center font-bold text-white bg-blue-600 text-lg shadow-inner">
+                                            <td className="p-3 text-center font-bold text-white bg-blue-600 text-lg shadow-inner sticky right-0">
                                                 {{st.total}}
                                             </td>
                                             <td className="p-2 text-center flex items-center justify-center gap-2">
-                                                <button onClick={{()=>setEditingPerson(p)}} className="text-gray-300 hover:text-blue-500"><Icons.Edit/></button>
-                                                <button onClick={{()=>removePerson(p.id)}} className="text-gray-300 hover:text-red-500"><Icons.Trash2/></button>
+                                                <button onClick={{()=>setEditingPerson(p)}} className="text-gray-400 hover:text-blue-600"><Icons.Edit size={{14}}/></button>
+                                                <button onClick={{()=>removePerson(p.id)}} className="text-gray-400 hover:text-red-600"><Icons.Trash2 size={{14}}/></button>
                                             </td>
                                         </tr>
                                     );
@@ -543,30 +536,39 @@ html_code = f"""
                 </div>
             )}}
 
-            {{/* ... DİĞER TABLAR (GÖREV ÇİZELGESİ ve AYARLAR - Değişiklik Yok) ... */}}
+            {{/* --- TAB: GÖREV ÇİZELGESİ --- */}}
             {{activeTab === 'schedule' && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 flex flex-col h-[85vh]">
-                    <div className="p-3 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <span className="hidden sm:inline">Kodlar: <b>G, T, F...</b></span>
-                        </div>
+                <div className="bg-white rounded-xl shadow border border-gray-200 flex flex-col h-full overflow-hidden">
+                    {/* --- KOD LEJANTI --- */}
+                    <div className="p-2 bg-gray-50 border-b flex flex-wrap gap-2 text-[10px] sm:text-xs text-gray-600 justify-center shrink-0">
+                         {{settings.map(s => (
+                             <div key={{s.code}} className="flex items-center gap-1 bg-white border px-2 py-1 rounded-full shadow-sm">
+                                 <span className="font-bold text-blue-800 bg-blue-100 w-5 h-5 flex items-center justify-center rounded-full">{{s.code}}</span>
+                                 <span>{{s.label}} ({{s.points}}p)</span>
+                             </div>
+                         ))}}
+                    </div>
+
+                    <div className="p-2 border-b flex justify-between items-center bg-white shrink-0">
+                        <div className="text-xs text-gray-500 font-bold hidden sm:block">Görev Takvimi</div>
                         <div className="flex gap-2">
                              <button onClick={{addRow}} className="bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 text-xs font-bold flex items-center gap-1"><Icons.Plus size={{14}}/> Satır</button>
                              <button onClick={{()=>exportCSV('schedule')}} className="bg-gray-600 text-white px-3 py-1.5 rounded hover:bg-gray-700 text-xs font-bold flex items-center gap-1"><Icons.Download size={{14}}/> Excel</button>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-auto table-container">
+                    <div className="table-container bg-white">
                         <table className="w-full border-collapse">
                             <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th className="p-2 border w-8 text-center">#</th>
-                                    <th className="p-2 border w-24 min-w-[100px] text-left text-xs font-bold">Tarih</th>
-                                    <th className="p-2 border w-40 min-w-[150px] text-left text-xs font-bold">Görev</th>
+                                    <th className="p-2 border w-8 text-center bg-gray-200 z-20 sticky left-0">#</th>
+                                    <th className="p-2 border w-24 min-w-[100px] text-left text-xs font-bold bg-gray-100 z-10 sticky left-8">Tarih</th>
+                                    <th className="p-2 border w-40 min-w-[150px] text-left text-xs font-bold bg-gray-100">Görev</th>
                                     {{deptSortedPersonnel.map(p => (
-                                        <th key={{p.id}} className="p-1 border w-12 min-w-[40px] text-center bg-blue-50/50">
-                                            <div className="text-[10px] font-bold text-blue-900 truncate w-12 mx-auto" title={{p.name}}>
-                                                {{p.name.split(' ').map(n=>n[0]).join('')}}
+                                        <th key={{p.id}} className="p-1 border w-10 min-w-[36px] text-center bg-blue-50 relative align-bottom hover:bg-blue-100 transition-colors">
+                                            {/* DİKEY İSİM YAZISI */}
+                                            <div className="vertical-text text-[10px] font-bold text-blue-900 mx-auto">
+                                                {{p.name}}
                                             </div>
                                         </th>
                                     ))}}
@@ -576,8 +578,8 @@ html_code = f"""
                             <tbody>
                                 {{schedule.map((row, i) => (
                                     <tr key={{row.id}} className="group hover:bg-blue-50">
-                                        <td className="p-1 border text-center text-xs text-gray-400">{{i+1}}</td>
-                                        <td className="p-1 border">
+                                        <td className="p-1 border text-center text-xs text-gray-400 sticky left-0 bg-white group-hover:bg-blue-50">{{i+1}}</td>
+                                        <td className="p-1 border sticky left-8 bg-white group-hover:bg-blue-50">
                                             <input className="w-full bg-transparent text-xs outline-none" placeholder="Tarih" value={{row.date}} onChange={{e=>handleRowInfo(row.id, 'date', e.target.value)}} />
                                         </td>
                                         <td className="p-1 border">
@@ -587,7 +589,7 @@ html_code = f"""
                                             <td key={{p.id}} className="p-1 border text-center">
                                                 <input 
                                                     className="w-full text-center text-xs uppercase font-bold outline-none bg-transparent focus:bg-yellow-100 placeholder-gray-200"
-                                                    placeholder="-"
+                                                    placeholder=""
                                                     value={{row.assignments[p.id] || ''}}
                                                     onChange={{e=>handleAssignmentChange(row.id, p.id, e.target.value)}}
                                                 />
@@ -604,8 +606,9 @@ html_code = f"""
                 </div>
             )}}
 
+            {{/* --- TAB: AYARLAR --- */}}
             {{activeTab === 'settings' && (
-                <div className="bg-white rounded-xl shadow p-6 max-w-2xl mx-auto mt-4">
+                <div className="bg-white rounded-xl shadow p-6 max-w-2xl mx-auto mt-4 overflow-y-auto h-full">
                     <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Icons.Settings/> Sistem Ayarları</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
                         {{settings.map(s => (
