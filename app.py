@@ -34,7 +34,7 @@ st.markdown("""
 
 # --- FIREBASE CONFIG YÖNETİMİ ---
 
-# 1. Adım: API Bilgilerini Python Sözlüğü Olarak Tanımla (Hata buradaydı, düzeltildi)
+# 1. Adım: API Bilgilerini Python Sözlüğü Olarak Tanımla
 default_firebase_config = {
   "apiKey": "AIzaSyDkZeAqVJncmg51Phnq3IyT64gFOmG9KAk",
   "authDomain": "sbbf-gys.firebaseapp.com",
@@ -61,7 +61,6 @@ with st.sidebar:
     st.success("✅ Veritabanı Bağlantısı Aktif")
     st.info("Sistem, kod içine gömülü API anahtarını kullanıyor.")
     
-    # İsteğe bağlı: Başka bir config ile değiştirmek istenirse diye gizli bir alan bırakabiliriz
     with st.expander("Ayarları Değiştir (Gelişmiş)"):
         user_input = st.text_area("Yeni Config JSON", placeholder='{"apiKey": "..."}')
         if user_input.strip():
@@ -89,11 +88,13 @@ html_code = f"""
   <script type="module">
     import {{ initializeApp }} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import {{ getFirestore, doc, onSnapshot, setDoc, getDoc }} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-    
-    // Python'dan gelen config verisi
+    import {{ getAuth, signInAnonymously }} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
     window.FIREBASE_CONFIG = {firebase_config_json};
     window.initializeApp = initializeApp;
     window.getFirestore = getFirestore;
+    window.getAuth = getAuth;
+    window.signInAnonymously = signInAnonymously;
     window.doc = doc;
     window.onSnapshot = onSnapshot;
     window.setDoc = setDoc;
@@ -124,6 +125,17 @@ html_code = f"""
 
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
     input[type=number] {{ -moz-appearance: textfield; }}
+    
+    /* Loading Spinner */
+    .loader {{
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }}
+    @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
   </style>
 </head>
 <body>
@@ -145,7 +157,7 @@ html_code = f"""
         CloudOff: (p) => <Icon {{...p}} path={{<><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 15h9a5 5 0 0 0 1.7-.3"/><line x1="1" y1="1" x2="23" y2="23"/></>}} />,
         Users: (p) => <Icon {{...p}} path={{<><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>}} />,
         Calendar: (p) => <Icon {{...p}} path={{<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>}} />,
-        Settings: (p) => <Icon {{...p}} path={{<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>}} />,
+        Settings: (p) => <Icon {{...p}} path={{<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2 2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>}} />,
         Plus: (p) => <Icon {{...p}} path={{<><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>}} />,
         Trash2: (p) => <Icon {{...p}} path={{<><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>}} />,
         Edit: (p) => <Icon {{...p}} path={{<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>}} />,
@@ -156,6 +168,8 @@ html_code = f"""
         ArrowUp: (p) => <Icon {{...p}} path={{<><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></>}} />,
         ArrowUpDown: (p) => <Icon {{...p}} path={{<><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></>}} />,
         Info: (p) => <Icon {{...p}} path={{<><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></>}} />,
+        CheckCircle: (p) => <Icon {{...p}} path={{<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>}} />,
+        AlertCircle: (p) => <Icon {{...p}} path={{<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>}} />,
     }};
 
     // --- BAŞLANGIÇ VERİLERİ ---
@@ -196,6 +210,8 @@ html_code = f"""
     function App() {{
       const [db, setDb] = useState(null);
       const [isOnline, setIsOnline] = useState(false);
+      const [isLoading, setIsLoading] = useState(true); // Yüklenme durumu
+      const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
       const [activeTab, setActiveTab] = useState('list');
       
       const [personnel, setPersonnel] = useState(INITIAL_PERSONNEL);
@@ -217,27 +233,46 @@ html_code = f"""
         if (window.FIREBASE_CONFIG && window.initializeApp) {{
           try {{
             const app = window.initializeApp(window.FIREBASE_CONFIG);
+            const auth = window.getAuth(app);
             const firestore = window.getFirestore(app);
-            setDb(firestore);
-            setIsOnline(true);
             
-            const unsub = window.onSnapshot(window.doc(firestore, "sbbf_sistem", "ana_veri"), (docSnap) => {{
-              if (docSnap.exists()) {{
-                const data = docSnap.data();
-                if(data.personnel) setPersonnel(data.personnel);
-                if(data.settings) setSettings(data.settings);
-                if(data.schedule) setSchedule(data.schedule);
-                if(data.manualScores) setManualScores(data.manualScores);
-              }} else {{
-                saveDataToCloud();
-              }}
+            // ANONİM GİRİŞ YAP (Kurallar kısıtlı olsa bile erişim sağlar)
+            window.signInAnonymously(auth).then(() => {{
+                setDb(firestore);
+                setIsOnline(true);
+                
+                // Veri Dinleyicisi
+                const unsub = window.onSnapshot(window.doc(firestore, "sbbf_sistem", "ana_veri"), (docSnap) => {{
+                  if (docSnap.exists()) {{
+                    const data = docSnap.data();
+                    if(data.personnel) setPersonnel(data.personnel);
+                    if(data.settings) setSettings(data.settings);
+                    if(data.schedule) setSchedule(data.schedule);
+                    if(data.manualScores) setManualScores(data.manualScores);
+                  }} else {{
+                    // Veri yoksa oluştur
+                    saveDataToCloud(true);
+                  }}
+                  setIsLoading(false);
+                }}, (error) => {{
+                   console.error("Veri okuma hatası:", error);
+                   // Hata olursa (örn: Permission Denied) offline moduna düş
+                   setIsOnline(false);
+                   setIsLoading(false);
+                }});
+            }}).catch((error) => {{
+                console.error("Anonim giriş hatası:", error);
+                setIsOnline(false);
+                setIsLoading(false);
             }});
-            return () => unsub();
+
           }} catch (e) {{
             console.error("Firebase Hatası:", e);
             setIsOnline(false);
+            setIsLoading(false);
           }}
         }} else {{
+            // Yerel mod
             const localP = localStorage.getItem('sbbf_personnel');
             const localSet = localStorage.getItem('sbbf_settings');
             const localSch = localStorage.getItem('sbbf_schedule');
@@ -247,11 +282,13 @@ html_code = f"""
             if(localSet) setSettings(JSON.parse(localSet));
             if(localSch) setSchedule(JSON.parse(localSch));
             if(localMan) setManualScores(JSON.parse(localMan));
+            setIsLoading(false);
         }}
       }}, []);
 
       // --- VERİ KAYDETME ---
-      const saveData = (newPersonnel, newSettings, newSchedule, newManual) => {{
+      const saveData = async (newPersonnel, newSettings, newSchedule, newManual) => {{
+        // Önce state güncelle (optimistic update)
         if(newPersonnel) setPersonnel(newPersonnel);
         if(newSettings) setSettings(newSettings);
         if(newSchedule) setSchedule(newSchedule);
@@ -265,8 +302,18 @@ html_code = f"""
         }};
 
         if (db && isOnline) {{
-             window.setDoc(window.doc(db, "sbbf_sistem", "ana_veri"), dataToSave);
+             setSaveStatus('saving');
+             try {{
+                 await window.setDoc(window.doc(db, "sbbf_sistem", "ana_veri"), dataToSave);
+                 setSaveStatus('saved');
+                 setTimeout(() => setSaveStatus('idle'), 2000);
+             }} catch (error) {{
+                 console.error("Kayıt hatası:", error);
+                 setSaveStatus('error');
+                 alert("Kayıt Başarısız! Veritabanı yazma izniniz olmayabilir.");
+             }}
         }} else {{
+             // Yerel Kayıt
              if(newPersonnel) localStorage.setItem('sbbf_personnel', JSON.stringify(newPersonnel));
              if(newSettings) localStorage.setItem('sbbf_settings', JSON.stringify(newSettings));
              if(newSchedule) localStorage.setItem('sbbf_schedule', JSON.stringify(newSchedule));
@@ -274,8 +321,15 @@ html_code = f"""
         }}
       }};
       
-      const saveDataToCloud = () => {{
-          if(db) window.setDoc(window.doc(db, "sbbf_sistem", "ana_veri"), {{ personnel, settings, schedule, manualScores }});
+      const saveDataToCloud = async (isInitial = false) => {{
+          if(db) {{
+              try {{
+                  await window.setDoc(window.doc(db, "sbbf_sistem", "ana_veri"), {{ personnel, settings, schedule, manualScores }});
+                  if(!isInitial) alert("Veriler buluta aktarıldı!");
+              }} catch (e) {{
+                  console.error("İlk kayıt hatası", e);
+              }}
+          }}
       }};
 
       // --- HESAPLAMA ---
@@ -404,6 +458,15 @@ html_code = f"""
           link.click();
       }};
 
+      if (isLoading) {{
+          return (
+              <div className="flex items-center justify-center h-screen bg-gray-50 flex-col gap-4">
+                  <div className="loader"></div>
+                  <div className="text-gray-500 font-medium">Veritabanına Bağlanılıyor...</div>
+              </div>
+          );
+      }}
+
       return (
         <div className="flex flex-col h-screen overflow-hidden font-sans text-sm text-gray-800 bg-gray-50">
           
@@ -449,16 +512,26 @@ html_code = f"""
                     </div>
                 </div>
                 
-                <div className="flex bg-blue-950/50 p-1 rounded-lg w-full md:w-auto overflow-x-auto">
-                    <button onClick={{()=>setActiveTab('list')}} className={{`flex-1 md:flex-none px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap ${{activeTab==='list'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
-                        <Icons.Users size={{16}}/> Personel
-                    </button>
-                    <button onClick={{()=>setActiveTab('schedule')}} className={{`flex-1 md:flex-none px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap ${{activeTab==='schedule'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
-                        <Icons.Calendar size={{16}}/> Çizelge
-                    </button>
-                    <button onClick={{()=>setActiveTab('settings')}} className={{`flex-1 md:flex-none px-4 py-2 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap ${{activeTab==='settings'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
-                        <Icons.Settings size={{16}}/> Ayarlar
-                    </button>
+                {{/* NAV & STATUS BAR */}}
+                <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
+                    {{/* SAVE STATUS INDICATOR */}}
+                    <div className="mr-2">
+                        {{saveStatus === 'saving' && <span className="text-xs text-yellow-300 flex items-center animate-pulse"><Icons.Cloud size={{14}} className="mr-1"/> Kaydediliyor...</span>}}
+                        {{saveStatus === 'saved' && <span className="text-xs text-green-300 flex items-center"><Icons.CheckCircle size={{14}} className="mr-1"/> Kaydedildi</span>}}
+                        {{saveStatus === 'error' && <span className="text-xs text-red-300 flex items-center font-bold"><Icons.AlertCircle size={{14}} className="mr-1"/> HATA!</span>}}
+                    </div>
+
+                    <div className="flex bg-blue-950/50 p-1 rounded-lg">
+                        <button onClick={{()=>setActiveTab('list')}} className={{`px-3 py-1.5 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap text-xs sm:text-sm ${{activeTab==='list'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
+                            <Icons.Users size={{16}}/> <span className="hidden sm:inline">Personel</span>
+                        </button>
+                        <button onClick={{()=>setActiveTab('schedule')}} className={{`px-3 py-1.5 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap text-xs sm:text-sm ${{activeTab==='schedule'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
+                            <Icons.Calendar size={{16}}/> <span className="hidden sm:inline">Çizelge</span>
+                        </button>
+                        <button onClick={{()=>setActiveTab('settings')}} className={{`px-3 py-1.5 rounded-md flex items-center justify-center gap-2 transition-all whitespace-nowrap text-xs sm:text-sm ${{activeTab==='settings'?'bg-white text-blue-900 font-bold shadow':'text-blue-100 hover:bg-white/10'}}`}}>
+                            <Icons.Settings size={{16}}/> <span className="hidden sm:inline">Ayarlar</span>
+                        </button>
+                    </div>
                 </div>
             </div>
           </header>
