@@ -33,48 +33,46 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- FIREBASE CONFIG YÖNETİMİ ---
-# Sistem önce Streamlit Secrets'a bakar, yoksa Sidebar'dan giriş ister.
-firebase_config_json = const firebaseConfig = {
-  apiKey: "AIzaSyDkZeAqVJncmg51Phnq3IyT64gFOmG9KAk",
-  authDomain: "sbbf-gys.firebaseapp.com",
-  projectId: "sbbf-gys",
-  storageBucket: "sbbf-gys.firebasestorage.app",
-  messagingSenderId: "190513273934",
-  appId: "1:190513273934:web:4b01af6a947ee6163c771f",
-  measurementId: "G-W5QPD36QHZ"
-};
 
+# 1. Adım: API Bilgilerini Python Sözlüğü Olarak Tanımla (Hata buradaydı, düzeltildi)
+default_firebase_config = {
+  "apiKey": "AIzaSyDkZeAqVJncmg51Phnq3IyT64gFOmG9KAk",
+  "authDomain": "sbbf-gys.firebaseapp.com",
+  "projectId": "sbbf-gys",
+  "storageBucket": "sbbf-gys.firebasestorage.app",
+  "messagingSenderId": "190513273934",
+  "appId": "1:190513273934:web:4b01af6a947ee6163c771f",
+  "measurementId": "G-W5QPD36QHZ"
+}
+
+# Bu bilgiyi JSON string'e çeviriyoruz
+firebase_config_json = json.dumps(default_firebase_config)
+
+# 2. Adım: Eğer Streamlit Secrets varsa, oradaki bilgiyi kullan (Güvenlik Önceliği)
 if "firebase" in st.secrets:
-    # Secrets'tan gelen veriyi JSON string'e çevir
     try:
         firebase_config_json = json.dumps(dict(st.secrets["firebase"]))
     except Exception as e:
         st.error(f"Secrets hatası: {e}")
-else:
-    # Secrets yoksa manuel giriş kutusunu göster
-    with st.sidebar:
-        st.header("☁️ Veritabanı Ayarları")
-        st.warning("API anahtarı bulunamadı. Verileriniz sadece bu tarayıcıda saklanır.")
-        st.info("Kalıcı ve ortak kullanım için 'Streamlit Secrets' ayarlarını yapın veya aşağıya JSON yapıştırın.")
-        
-        firebase_config_input = st.text_area(
-            "Firebase Config (JSON)",
-            placeholder='{"apiKey": "...", ...}',
-            height=300
-        )
 
-        if firebase_config_input.strip():
+# Kenar Çubuğu: Durum Göstergesi
+with st.sidebar:
+    st.header("☁️ Veritabanı Durumu")
+    st.success("✅ Veritabanı Bağlantısı Aktif")
+    st.info("Sistem, kod içine gömülü API anahtarını kullanıyor.")
+    
+    # İsteğe bağlı: Başka bir config ile değiştirmek istenirse diye gizli bir alan bırakabiliriz
+    with st.expander("Ayarları Değiştir (Gelişmiş)"):
+        user_input = st.text_area("Yeni Config JSON", placeholder='{"apiKey": "..."}')
+        if user_input.strip():
             try:
-                clean_input = firebase_config_input.replace("const firebaseConfig =", "").replace(";", "").strip()
-                # Validasyon
-                json.loads(clean_input)
-                firebase_config_json = clean_input
-                st.success("Geçici bağlantı sağlandı! ✅")
+                json.loads(user_input)
+                firebase_config_json = user_input
+                st.warning("⚠️ Manuel girdi kullanılıyor.")
             except:
-                st.error("Geçersiz JSON formatı.")
+                st.error("Geçersiz JSON")
 
 # --- REACT UYGULAMASI ---
-# Not: Python f-string içinde React süslü parantezleri {{ }} şeklinde çiftlenmelidir.
 html_code = f"""
 <!DOCTYPE html>
 <html lang="tr">
