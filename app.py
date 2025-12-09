@@ -34,7 +34,15 @@ st.markdown("""
 
 # --- FIREBASE CONFIG YÖNETİMİ ---
 # Sistem önce Streamlit Secrets'a bakar, yoksa Sidebar'dan giriş ister.
-firebase_config_json = "null"
+firebase_config_json = const firebaseConfig = {
+  apiKey: "AIzaSyDkZeAqVJncmg51Phnq3IyT64gFOmG9KAk",
+  authDomain: "sbbf-gys.firebaseapp.com",
+  projectId: "sbbf-gys",
+  storageBucket: "sbbf-gys.firebasestorage.app",
+  messagingSenderId: "190513273934",
+  appId: "1:190513273934:web:4b01af6a947ee6163c771f",
+  measurementId: "G-W5QPD36QHZ"
+};
 
 if "firebase" in st.secrets:
     # Secrets'tan gelen veriyi JSON string'e çevir
